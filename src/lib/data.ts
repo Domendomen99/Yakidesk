@@ -1,8 +1,7 @@
 import type { Desk, Booking } from './types';
 import { addDays, format } from 'date-fns';
 
-// This data is now fetched from Firestore, but we'll keep it here
-// in case we need fallback data or for local development without Firestore.
+// This data is used to seed Firestore and as a fallback.
 
 export const initialDesks: Desk[] = [
   { id: 'D1', label: 'Desk 1', location: 'A1', type: 'Standard' },
