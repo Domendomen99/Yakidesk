@@ -58,16 +58,10 @@ export default function DeskMap({
       setIsBookingDialogOpen(true);
     }
   };
-  
-  const deskStyles: { [key: string]: string } = {
-    D1: 'w-48 h-24',
-    D2: 'w-48 h-24',
-    D3: 'w-48 h-24',
-  };
 
   const getDeskItem = (desk: Desk) => {
     const booking = findBookingForDesk(desk.id, timeSlot);
-    const deskClassName = deskStyles[desk.id] || 'w-24 h-24';
+    const deskClassName = 'w-24 h-24';
     
     if (booking) {
       const user = users.find(u => u.id === booking.userId);
