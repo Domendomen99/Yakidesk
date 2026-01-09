@@ -35,14 +35,14 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mr-4 flex">
+      <div className="container flex h-16 items-center justify-between max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Logo className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg font-headline">Yakidesk</span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex items-center space-x-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
