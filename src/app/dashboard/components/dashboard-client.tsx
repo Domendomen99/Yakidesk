@@ -150,9 +150,6 @@ export default function DashboardClient() {
           <Button variant="outline" size="icon" onClick={() => handleDateChange(addDays(date, 1))} aria-label="Next day">
             <ChevronRight className="h-4 w-4" />
           </Button>
-           <Button variant="ghost" onClick={() => handleDateChange(new Date())} className="hidden sm:inline-flex">
-            Today
-          </Button>
         </div>
 
         <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)}>
