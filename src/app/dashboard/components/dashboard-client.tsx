@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, doc, addDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,8 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import DeskMap from './desk-map';
-import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { DeskMap } from './desk-map';
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 
 export default function DashboardClient() {
   const { toast } = useToast();
@@ -30,6 +30,8 @@ export default function DashboardClient() {
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // We are fetching all bookings for the user. We will filter them client-side.
+    // For a larger scale app, we would query by date.
     return collection(firestore, 'users', user.uid, 'bookings');
   }, [firestore, user]);
 
@@ -65,6 +67,25 @@ export default function DashboardClient() {
     toast({
       title: 'Booking Confirmed!',
       description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
+    });
+  };
+
+  const handleCancellation = (booking: Booking) => {
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to cancel a booking.',
+      });
+      return;
+    }
+    const bookingDocRef = doc(firestore, 'users', user.uid, 'bookings', booking.id);
+    
+    deleteDocumentNonBlocking(bookingDocRef);
+
+    toast({
+      title: 'Booking Cancelled',
+      description: `Your booking for desk ${desks?.find(d => d.id === booking.deskId)?.label} on ${format(new Date(booking.date), 'PPP')} has been cancelled.`,
     });
   };
   
@@ -149,6 +170,7 @@ export default function DashboardClient() {
         selectedDate={date}
         selectedTimeSlot={timeSlot}
         onBookDesk={handleBooking}
+        onCancelBooking={handleCancellation}
       />
       
     </div>
