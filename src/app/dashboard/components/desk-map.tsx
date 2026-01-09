@@ -52,10 +52,10 @@ export default function DeskMap({ desks, bookings, selectedDate, selectedTimeSlo
   return (
     <>
       <div className="p-4 border border-border rounded-lg bg-background/30 w-full">
-        <div className="grid grid-cols-2 grid-rows-2 gap-4 justify-items-center items-center w-max mx-auto">
-            {desk1 && <div className="justify-self-start">{getDeskItem(desk1)}</div>}
-            {desk2 && <div className="justify-self-end">{getDeskItem(desk2)}</div>}
-            {desk3 && <div className="justify-self-start row-start-2">{getDeskItem(desk3)}</div>}
+        <div className="grid grid-cols-2 grid-rows-2 gap-4 h-96">
+            {desk1 && <div className="justify-self-start self-start">{getDeskItem(desk1)}</div>}
+            {desk2 && <div className="justify-self-end self-start">{getDeskItem(desk2)}</div>}
+            {desk3 && <div className="justify-self-start self-end">{getDeskItem(desk3)}</div>}
             {/* Empty cell for bottom right */}
             <div></div> 
         </div>
