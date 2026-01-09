@@ -8,6 +8,7 @@ import BookedDeskItem from './booked-desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
 import BookingCancellationDialog from './booking-cancellation-dialog';
 import type { User } from 'firebase/auth';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface DeskMapProps {
   desks: Desk[];
