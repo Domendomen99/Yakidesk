@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, doc, addDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, addDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -14,7 +14,6 @@ import type { Booking, Desk, TimeSlot } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
 import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { initialDesks } from '@/lib/data';
 
 export default function DashboardClient() {
   const { toast } = useToast();
@@ -31,12 +30,10 @@ export default function DashboardClient() {
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Note: This only fetches bookings for the current user. 
-    // To show all bookings for availability, we'd need a different query and rules.
     return collection(firestore, 'users', user.uid, 'bookings');
   }, [firestore, user]);
 
-  const { data: desksFromFirestore, isLoading: isLoadingDesks } = useCollection<Desk>(desksQuery);
+  const { data: desks, isLoading: isLoadingDesks } = useCollection<Desk>(desksQuery);
   const { data: bookings, isLoading: isLoadingBookings } = useCollection<Booking>(bookingsQuery);
 
   const handleDateChange = (newDate: Date | undefined) => {
@@ -70,41 +67,31 @@ export default function DashboardClient() {
       description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
     });
   };
-
-  const seedDesks = async () => {
-    if (!firestore) {
-      toast({ title: "Firestore not available", variant: 'destructive' });
-      return;
-    }
-    const batch = writeBatch(firestore);
-    const desksCol = collection(firestore, 'desks');
-
-    initialDesks.forEach((desk) => {
-      const deskRef = doc(desksCol, desk.id);
-      batch.set(deskRef, desk);
-    });
-
-    try {
-      await batch.commit();
-      toast({ title: "Success!", description: "Desks have been seeded to Firestore." });
-    } catch (e: any) {
-      toast({ title: "Error seeding desks", description: e.message, variant: 'destructive' });
-      console.error(e);
-    }
-  }
   
-  // Use Firestore desks if available, otherwise fall back to initial local data
-  const currentDesks = (desksFromFirestore && desksFromFirestore.length > 0) ? desksFromFirestore : initialDesks;
+  const currentDesks = desks || [];
   const currentBookings = bookings || [];
   const isLoading = isLoadingDesks || isLoadingBookings;
 
-  if (isLoading && desksFromFirestore === null) {
+  if (isLoading && desks === null) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p>Loading desks...</p>
       </div>
     );
   }
+  
+  if (!isLoading && (!desks || desks.length === 0)) {
+     return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+        <div>
+           <h2 className="text-2xl font-headline mb-4">Welcome to Yakidesk!</h2>
+           <p className="text-muted-foreground mb-2">It looks like there are no desks configured in the database.</p>
+           <p className="text-muted-foreground">Please add them in the Firestore console to get started.</p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -164,11 +151,6 @@ export default function DashboardClient() {
         onBookDesk={handleBooking}
       />
       
-      {(!desksFromFirestore || desksFromFirestore.length === 0) && (
-        <div className="absolute bottom-4 right-4">
-          <Button onClick={seedDesks} variant="destructive">Seed Desks in Firestore</Button>
-        </div>
-      )}
     </div>
   );
 }
