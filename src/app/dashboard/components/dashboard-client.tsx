@@ -175,10 +175,9 @@ export default function DashboardClient() {
           </Button>
         </div>
         <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)} className="w-full md:w-auto">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="morning" className="w-full">Morning</TabsTrigger>
-            <TabsTrigger value="afternoon" className="w-full">Afternoon</TabsTrigger>
-            <TabsTrigger value="full-day" className="w-full">Full Day</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="morning">Morning</TabsTrigger>
+            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

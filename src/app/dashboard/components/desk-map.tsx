@@ -40,7 +40,7 @@ export default function DeskMap({
     return bookings.find(
       (booking) =>
         booking.deskId === deskId &&
-        (booking.timeSlot === timeSlot || booking.timeSlot === 'full-day' || timeSlot === 'full-day')
+        (booking.timeSlot === timeSlot || booking.timeSlot === 'full-day')
     );
   };
   
