@@ -32,21 +32,43 @@ export default function DeskMap({ desks, bookings, selectedDate, selectedTimeSlo
       setSelectedDesk(desk);
       setIsDialogOpen(true);
   };
+  
+  const getDeskItem = (desk: Desk) => {
+    const booked = isDeskBooked(desk.id, selectedTimeSlot);
+    return (
+      <DeskItem
+        key={desk.id}
+        desk={desk}
+        isBooked={booked}
+        onClick={() => handleDeskClick(desk)}
+      />
+    );
+  }
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8 text-center p-4">
-        {desks.map((desk) => {
-          const booked = isDeskBooked(desk.id, selectedTimeSlot);
-          return (
-            <DeskItem
-              key={desk.id}
-              desk={desk}
-              isBooked={booked}
-              onClick={() => handleDeskClick(desk)}
-            />
-          );
-        })}
+      <div className="grid grid-cols-4 grid-rows-4 gap-6 md:gap-8 text-center p-4 border border-border rounded-lg bg-background/30 aspect-[16/9] min-h-[600px]">
+        {/* Top-left corner */}
+        <div className="col-start-1 col-span-2 row-start-1 row-span-2 flex items-start justify-start">
+            <div className='grid grid-cols-2 gap-4'>
+                {desks.slice(0, 2).map(getDeskItem)}
+            </div>
+        </div>
+
+        {/* Top-right corner */}
+        <div className="col-start-3 col-span-2 row-start-1 row-span-2 flex items-start justify-end">
+             <div className='grid grid-cols-2 gap-4'>
+                {desks.slice(2, 4).map(getDeskItem)}
+            </div>
+        </div>
+
+        {/* Bottom-left corner */}
+        <div className="col-start-1 col-span-2 row-start-3 row-span-2 flex items-end justify-start">
+             <div className='grid grid-cols-2 gap-4'>
+                {desks.slice(4, 6).map(getDeskItem)}
+            </div>
+        </div>
+
       </div>
       {selectedDesk && (
         <BookingConfirmationDialog
