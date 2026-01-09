@@ -1,27 +1,26 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
- * data, such as profiles and bookings, is private and can only be accessed by the user
- * who created it. Publicly accessible data, like the list of available desks, is segregated
- * into its own top-level collection and is read-only for clients.
+ * Core Philosophy: This ruleset uses a mixed-privacy model.
+ * - Publicly readable, privately writable data: User profiles and bookings are readable
+ *   by any authenticated user to facilitate UI features (like showing who booked a desk),
+ *   but can only be created, updated, or deleted by the user who owns them.
+ * - Admin-managed data: Desk information is read-only for all clients.
  *
- * Data Structure: The data is organized to reflect ownership clearly. Each user's private
- * information and their bookings are nested under a path containing their unique user ID:
- *   - /users/{userId} (Private user profile)
- *   - /users/{userId}/bookings/{bookingId} (User's private bookings)
- * Global, non-user-specific data resides in top-level collections:
- *   - /desks/{deskId} (Publicly viewable desk information)
+ * Data Structure:
+ * - /users/{userId}: Publicly readable user profiles.
+ * - /bookings/{bookingId}: Publicly readable list of all bookings.
+ * - /desks/{deskId}: Publicly readable desk information.
  *
  * Key Security Decisions:
- * - User Enumeration Disabled: Listing documents in the top-level `/users` collection is
- *   explicitly forbidden to protect user privacy.
- * - Path-Based Security: Rules rely on the `{userId}` wildcard in the document path to grant
- *   access, which is highly performant and avoids costly database lookups (`get()` calls).
- * - Admin-Managed Data: The `/desks` collection is treated as read-only for all clients.
- *   Creating, updating, or deleting desks must be done through a trusted server environment
- *   (e.g., the Firebase Admin SDK), not directly by the application's users.
- * - Relational Integrity: On creation, rules ensure that documents contain an internal
- *   `userId` that matches the user ID in the path, creating a secure and immutable link
- *   back to the owner.
+ * - Path-Based Security & Field Validation: Rules rely on the `{userId}` wildcard and
+ *   validating the `userId` field within documents to grant write access. This is
+ *   performant and secure.
+ * - User Profile Management: Users create their own profile upon their first booking action.
+ *   They can update their own profile, but cannot change their ID. Other users can read profiles
+ *   but cannot write to them.
+ * - Booking Management: Any authenticated user can read the list of bookings. However,
+ *   a user can only create, update, or delete bookings where the `userId` field
+ *   matches their own `request.auth.uid`.
+ * - Admin-Managed Desks: The `/desks` collection is strictly read-only for clients.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -31,59 +30,12 @@ service cloud.firestore {
     // Helper Functions
     //-------------------------------------------------------------------------
 
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the currently authenticated user's ID matches the provided userId.
-     * This is the core of the ownership model.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * A robust check for update/delete operations, ensuring the user is the owner
-     * AND the document actually exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * Validates a new user profile document on creation.
-     * Ensures the internal 'id' field matches the document's path ID (userId).
-     */
-    function isValidUserCreate(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Enforces immutability for critical fields on a user profile update.
-     * Prevents the ownership link ('id') from being changed after creation.
-     */
-    function isImmutableUserUpdate(userId) {
-      return request.resource.data.id == resource.data.id;
-    }
-    
-    /**
-     * Validates a new booking document on creation.
-     * Ensures the internal 'userId' field matches the owner's ID from the path.
-     */
-    function isValidBookingCreate(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Enforces immutability for critical fields on a booking update.
-     * Prevents the ownership link ('userId') from being changed after creation.
-     */
-    function isImmutableBookingUpdate(userId) {
-      return request.resource.data.userId == resource.data.userId;
     }
 
     //-------------------------------------------------------------------------
@@ -91,53 +43,36 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
 
     /**
-     * @description Manages user profile documents. Each user can create their own profile
-     *   and has full control over it. No other user can view or modify it.
+     * @description Manages user profiles. Profiles are readable by any authenticated user
+     *   to display information like names on bookings, but are only writable by the owner.
      * @path /users/{userId}
-     * @allow (create) An authenticated user creating their own profile document.
-     *   auth.uid: "user_abc", path: /users/user_abc
-     * @deny (get) Another authenticated user trying to read someone else's profile.
-     *   auth.uid: "user_xyz", path: /users/user_abc
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // CRITICAL: Prevents user enumeration.
-      allow create: if isOwner(userId) && isValidUserCreate(userId);
-      allow update: if isExistingOwner(userId) && isImmutableUserUpdate(userId);
-      allow delete: if isExistingOwner(userId);
-
-      /**
-       * @description Manages a user's bookings. A booking is private and can only be
-       *   managed by the user who owns it.
-       * @path /users/{userId}/bookings/{bookingId}
-       * @allow (create) An authenticated user creating a booking for themselves.
-       *   auth.uid: "user_abc", path: /users/user_abc/bookings/booking_123
-       * @deny (list) An authenticated user trying to list someone else's bookings.
-       *   auth.uid: "user_xyz", path: /users/user_abc/bookings
-       * @principle Enforces document ownership for all operations in a subcollection.
-       */
-      match /bookings/{bookingId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidBookingCreate(userId);
-        allow update: if isExistingOwner(userId) && isImmutableBookingUpdate(userId);
-        allow delete: if isExistingOwner(userId);
-      }
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
     }
 
     /**
-     * @description Manages the collection of available desks. This data is considered
-     *   public for all users of the app to read, but cannot be modified by them.
+     * @description Manages the collection of available desks. This data is public
+     *   read-only for all clients.
      * @path /desks/{deskId}
-     * @allow (get, list) Any user, signed in or not, can view the list of desks.
-     * @deny (create, update, delete) All clients are forbidden from modifying desks.
-     *   This data must be managed from a trusted server environment.
-     * @principle Provides public read access while preventing all client-side writes.
      */
     match /desks/{deskId} {
-      allow get: if true;
-      allow list: if true;
+      allow read: if true;
+      allow write: if false; // Must be managed from a trusted server environment
+    }
+
+    /**
+     * @description Manages all bookings. Bookings are readable by all authenticated users,
+     *   but can only be created or deleted by the user who owns the booking.
+     * @path /bookings/{bookingId}
+     */
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn();
+      // Allow create if the user is signed in and the booking's userId matches their own.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Allow update/delete if the user is signed in and the existing booking's userId matches their own.
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

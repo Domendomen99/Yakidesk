@@ -2,11 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth, useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +18,7 @@ import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -29,15 +28,30 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // The useEffect hook will handle the redirection
+      const result = await signInWithPopup(auth, provider);
+      const signedInUser = result.user;
+
+      // After sign-in, check if the user document exists and create it if it doesn't.
+      const userDocRef = doc(firestore, 'users', signedInUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        const newUserProfile = {
+          id: signedInUser.uid,
+          name: signedInUser.displayName,
+          email: signedInUser.email,
+          avatarUrl: signedInUser.photoURL,
+        };
+        // Use non-blocking write. The security rule will protect this operation.
+        addDocumentNonBlocking(userDocRef, newUserProfile);
+      }
+
+      // The useEffect hook will handle the redirection.
     } catch (error) {
       console.error('Error during Google sign-in:', error);
-      // Optionally, show a toast or error message to the user
     }
   };
   

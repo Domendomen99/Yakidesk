@@ -5,11 +5,10 @@ import { DeskIcon } from './desk-icon';
 
 interface DeskItemProps {
   desk: Desk;
-  isBooked: boolean;
   onClick: () => void;
 }
 
-export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
+export default function DeskItem({ desk, onClick }: DeskItemProps) {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -18,9 +17,7 @@ export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
             onClick={onClick}
             className={cn(
               'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform hover:scale-105 w-24 h-24 justify-center',
-              isBooked
-                ? 'border-muted-foreground/30 bg-muted/20 text-muted-foreground cursor-not-allowed'
-                : 'border-border hover:border-primary hover:bg-accent/10 cursor-pointer'
+              'border-border hover:border-primary hover:bg-accent/10 cursor-pointer'
             )}
             role="button"
             tabIndex={0}
@@ -34,13 +31,13 @@ export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
             <DeskIcon
               className={cn(
                 'h-10 w-10 transition-colors',
-                isBooked ? 'text-muted-foreground/50' : 'text-primary'
+                'text-primary'
               )}
             />
             <span
               className={cn(
                 'font-medium font-body text-sm',
-                 isBooked ? 'text-muted-foreground' : 'text-foreground'
+                 'text-foreground'
               )}
             >
               {desk.label}
@@ -48,7 +45,7 @@ export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p className='font-sans'>{isBooked ? `Booked for selected slot` : `Click to see booking options`}</p>
+          <p className='font-sans'>Click to see booking options</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, doc } from 'firebase/firestore';
-
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import type { Booking, Desk, TimeSlot } from '@/lib/types';
+import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
 import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
@@ -21,27 +20,46 @@ export default function DashboardClient() {
   const firestore = useFirestore();
 
   const [date, setDate] = useState<Date>(new Date());
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
   
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'desks');
   }, [firestore]);
 
+  const formattedDate = format(date, 'yyyy-MM-dd');
+
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    // We are fetching all bookings for the user. We will filter them client-side.
-    // For a larger scale app, we would query by date.
-    return collection(firestore, 'users', user.uid, 'bookings');
-  }, [firestore, user]);
+    if (!firestore) return null;
+    return query(collection(firestore, 'bookings'), where('date', '==', formattedDate));
+  }, [firestore, formattedDate]);
+  
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
 
   const { data: desks, isLoading: isLoadingDesks } = useCollection<Desk>(desksQuery);
   const { data: bookings, isLoading: isLoadingBookings } = useCollection<Booking>(bookingsQuery);
+  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
   const handleDateChange = (newDate: Date | undefined) => {
     if (newDate) {
       setDate(newDate);
     }
+  };
+  
+   const handleUserCreation = async () => {
+    if (!user || !firestore) return;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    // This function now uses the non-blocking version.
+    // It will attempt to create/update the user profile in the background.
+    // We assume the user's display name might have been updated since the last check.
+    addDocumentNonBlocking(userDocRef, {
+      id: user.uid,
+      name: user.displayName,
+      email: user.email,
+      avatarUrl: user.photoURL,
+    });
   };
 
   const handleBooking = (desk: Desk, selectedTimeSlot: TimeSlot) => {
@@ -53,8 +71,11 @@ export default function DashboardClient() {
       });
       return;
     }
+    
+    // Ensure user profile exists before booking
+    handleUserCreation();
 
-    const bookingsCollectionRef = collection(firestore, 'users', user.uid, 'bookings');
+    const bookingsCollectionRef = collection(firestore, 'bookings');
     const newBooking = {
       deskId: desk.id,
       userId: user.uid,
@@ -79,7 +100,7 @@ export default function DashboardClient() {
       });
       return;
     }
-    const bookingDocRef = doc(firestore, 'users', user.uid, 'bookings', booking.id);
+    const bookingDocRef = doc(firestore, 'bookings', booking.id);
     
     deleteDocumentNonBlocking(bookingDocRef);
 
@@ -91,7 +112,8 @@ export default function DashboardClient() {
   
   const currentDesks = desks || [];
   const currentBookings = bookings || [];
-  const isLoading = isLoadingDesks || isLoadingBookings;
+  const userProfiles = users || [];
+  const isLoading = isLoadingDesks || isLoadingBookings || isLoadingUsers;
 
   if (isLoading && desks === null) {
     return (
@@ -107,7 +129,7 @@ export default function DashboardClient() {
         <div>
            <h2 className="text-2xl font-headline mb-4">Welcome to Yakidesk!</h2>
            <p className="text-muted-foreground mb-2">It looks like there are no desks configured in the database.</p>
-           <p className="text-muted-foreground">Please add them in the Firestore console to get started.</p>
+           <p className="text-muted-foreground">Please add them via the Firestore console to get started.</p>
         </div>
       </div>
     );
@@ -151,21 +173,13 @@ export default function DashboardClient() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-
-        <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)}>
-          <TabsList className="grid w-full grid-cols-3 md:w-auto">
-            <TabsTrigger value="morning">Morning</TabsTrigger>
-            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
-            <TabsTrigger value="full-day">Full Day</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       <DeskMap
         desks={currentDesks}
         bookings={currentBookings}
+        users={userProfiles}
         selectedDate={date}
-        selectedTimeSlot={timeSlot}
         onBookDesk={handleBooking}
         onCancelBooking={handleCancellation}
         currentUser={user}

@@ -14,3 +14,10 @@ export interface Booking {
   date: string; // YYYY-MM-DD format
   timeSlot: TimeSlot;
 }
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}

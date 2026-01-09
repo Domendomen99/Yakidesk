@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { Booking, Desk, TimeSlot } from '@/lib/types';
+import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
 import DeskItem from './desk-item';
+import BookedDeskItem from './booked-desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
 import BookingCancellationDialog from './booking-cancellation-dialog';
 import type { User } from 'firebase/auth';
@@ -11,8 +12,8 @@ import type { User } from 'firebase/auth';
 interface DeskMapProps {
   desks: Desk[];
   bookings: Booking[];
+  users: UserProfile[];
   selectedDate: Date;
-  selectedTimeSlot: TimeSlot;
   onBookDesk: (desk: Desk, timeSlot: TimeSlot) => void;
   onCancelBooking: (booking: Booking) => void;
   currentUser: User | null;
@@ -21,8 +22,8 @@ interface DeskMapProps {
 export default function DeskMap({
   desks,
   bookings,
+  users,
   selectedDate,
-  selectedTimeSlot,
   onBookDesk,
   onCancelBooking,
   currentUser,
@@ -32,6 +33,7 @@ export default function DeskMap({
 
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
 
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
@@ -39,7 +41,6 @@ export default function DeskMap({
     return bookings.find(
       (booking) =>
         booking.deskId === deskId &&
-        booking.date === formattedDate &&
         (booking.timeSlot === timeSlot || booking.timeSlot === 'full-day' || timeSlot === 'full-day')
     );
   };
@@ -49,19 +50,32 @@ export default function DeskMap({
   }
 
   const handleDeskClick = (desk: Desk) => {
-    const existingBooking = findBookingForDesk(desk.id, selectedTimeSlot);
+    const existingBooking = findBookingForDesk(desk.id, timeSlot);
     if (existingBooking && isDeskBookedByCurrentUser(existingBooking)) {
       setBookingToCancel(existingBooking);
       setIsCancelDialogOpen(true);
-    } else {
+    } else if (!existingBooking) {
       setSelectedDesk(desk);
       setIsBookingDialogOpen(true);
     }
   };
 
   const getDeskItem = (desk: Desk) => {
-    const booking = findBookingForDesk(desk.id, selectedTimeSlot);
-    return <DeskItem key={desk.id} desk={desk} isBooked={!!booking} onClick={() => handleDeskClick(desk)} />;
+    const booking = findBookingForDesk(desk.id, timeSlot);
+    if (booking) {
+      const user = users.find(u => u.id === booking.userId);
+      const isCurrentUser = isDeskBookedByCurrentUser(booking);
+      return (
+        <BookedDeskItem
+          key={desk.id}
+          desk={desk}
+          user={user}
+          isCurrentUser={isCurrentUser}
+          onClick={() => handleDeskClick(desk)}
+        />
+      );
+    }
+    return <DeskItem key={desk.id} desk={desk} onClick={() => handleDeskClick(desk)} />;
   };
 
   const desk1 = desks.find((d) => d.id === 'D1');
@@ -70,12 +84,19 @@ export default function DeskMap({
 
   return (
     <>
+       <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)} className="mb-8">
+          <TabsList className="grid w-full grid-cols-3 md:w-auto mx-auto">
+            <TabsTrigger value="morning">Morning</TabsTrigger>
+            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
+            <TabsTrigger value="full-day">Full Day</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
       <div className="p-4 border border-border rounded-lg bg-background/30 w-full">
         <div className="grid grid-cols-2 grid-rows-2 gap-4 h-96">
           {desk1 && <div className="justify-self-start self-start">{getDeskItem(desk1)}</div>}
           {desk2 && <div className="justify-self-end self-start">{getDeskItem(desk2)}</div>}
           {desk3 && <div className="justify-self-start self-end">{getDeskItem(desk3)}</div>}
-          {/* Empty cell for bottom right */}
           <div></div>
         </div>
       </div>
