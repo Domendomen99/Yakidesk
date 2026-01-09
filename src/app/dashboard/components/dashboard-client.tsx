@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
-import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 
 export default function DashboardClient() {
   const { toast } = useToast();
@@ -54,12 +54,12 @@ export default function DashboardClient() {
     // This function now uses the non-blocking version.
     // It will attempt to create/update the user profile in the background.
     // We assume the user's display name might have been updated since the last check.
-    addDocumentNonBlocking(userDocRef, {
+    setDocumentNonBlocking(userDocRef, {
       id: user.uid,
       name: user.displayName,
       email: user.email,
       avatarUrl: user.photoURL,
-    });
+    }, { merge: true });
   };
 
   const handleBooking = (desk: Desk, selectedTimeSlot: TimeSlot) => {
