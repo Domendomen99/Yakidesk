@@ -1,7 +1,7 @@
-import { Armchair } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { Desk } from '@/lib/types';
+import { DeskIcon } from './desk-icon';
 
 interface DeskItemProps {
   desk: Desk;
@@ -17,7 +17,7 @@ export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
           <div
             onClick={onClick}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform hover:scale-105',
+              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform hover:scale-105 w-24 h-24 justify-center',
               isBooked
                 ? 'border-muted-foreground/30 bg-muted/20 text-muted-foreground cursor-not-allowed'
                 : 'border-border hover:border-primary hover:bg-accent/10 cursor-pointer'
@@ -31,15 +31,15 @@ export default function DeskItem({ desk, isBooked, onClick }: DeskItemProps) {
               }
             }}
           >
-            <Armchair
+            <DeskIcon
               className={cn(
-                'h-12 w-12 transition-colors',
+                'h-10 w-10 transition-colors',
                 isBooked ? 'text-muted-foreground/50' : 'text-primary'
               )}
             />
             <span
               className={cn(
-                'font-medium font-body',
+                'font-medium font-body text-sm',
                  isBooked ? 'text-muted-foreground' : 'text-foreground'
               )}
             >
