@@ -3,6 +3,8 @@ export type TimeSlot = 'morning' | 'afternoon' | 'full-day';
 export interface Desk {
   id: string;
   label: string;
+  location: string;
+  type: string;
 }
 
 export interface Booking {

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { format, addDays, subDays, isToday, isBefore, startOfToday } from 'date-fns';
+import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { collection, doc, addDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -10,15 +11,30 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot } from '@/lib/types';
-import { initialBookings, initialDesks } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 
 export default function DashboardClient() {
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  
+  const desksQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'desks');
+  }, [firestore]);
+
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'users', user.uid, 'bookings');
+  }, [firestore, user]);
+
+  const { data: desks, isLoading: isLoadingDesks } = useCollection<Desk>(desksQuery);
+  const { data: bookings, isLoading: isLoadingBookings } = useCollection<Booking>(bookingsQuery);
 
   const handleDateChange = (newDate: Date | undefined) => {
     if (newDate) {
@@ -27,21 +43,42 @@ export default function DashboardClient() {
   };
 
   const handleBooking = (desk: Desk, selectedTimeSlot: TimeSlot) => {
-    const newBooking: Booking = {
-      id: `B${bookings.length + 1}`,
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to book a desk.',
+      });
+      return;
+    }
+
+    const bookingsCollectionRef = collection(firestore, 'users', user.uid, 'bookings');
+    const newBooking = {
       deskId: desk.id,
-      userId: 'current-user', // Simulated user
+      userId: user.uid,
       date: format(date, 'yyyy-MM-dd'),
       timeSlot: selectedTimeSlot,
     };
-
-    setBookings([...bookings, newBooking]);
+    
+    addDocumentNonBlocking(bookingsCollectionRef, newBooking);
 
     toast({
       title: 'Booking Confirmed!',
       description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
     });
   };
+  
+  const currentBookings = bookings || [];
+  const currentDesks = desks || [];
+  const isLoading = isLoadingDesks || isLoadingBookings;
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p>Loading desks...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -94,8 +131,8 @@ export default function DashboardClient() {
       </div>
 
       <DeskMap
-        desks={initialDesks}
-        bookings={bookings}
+        desks={currentDesks}
+        bookings={currentBookings}
         selectedDate={date}
         selectedTimeSlot={timeSlot}
         onBookDesk={handleBooking}
