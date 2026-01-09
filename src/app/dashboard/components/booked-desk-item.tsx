@@ -21,6 +21,15 @@ function getInitials(name: string | undefined | null) {
   return name.substring(0, 2).toUpperCase();
 }
 
+function getFormattedName(name: string | undefined | null) {
+  if (!name) return 'N/A';
+  const names = name.split(' ');
+  if (names.length > 1) {
+    return `${names[0]} ${names[names.length - 1][0]}.`;
+  }
+  return name;
+}
+
 export default function BookedDeskItem({ desk, user, isCurrentUser, onClick, className }: BookedDeskItemProps) {
   const tooltipContent = isCurrentUser
     ? 'Booked by you. Click to cancel.'
@@ -61,11 +70,11 @@ export default function BookedDeskItem({ desk, user, isCurrentUser, onClick, cla
             </Avatar>
             <span
               className={cn(
-                'font-medium font-body text-sm',
+                'font-medium font-body text-sm text-center',
                  isCurrentUser ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              {desk.label}
+              {getFormattedName(user?.name)}
             </span>
           </div>
         </TooltipTrigger>
