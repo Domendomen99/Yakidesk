@@ -1,0 +1,164 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Yakidesk coworking space booking application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The Google ID of the user, used for authentication."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the user's avatar image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "email",
+        "name"
+      ]
+    },
+    "Desk": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Desk",
+      "type": "object",
+      "description": "Represents a desk in the coworking space.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the desk."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location of the desk within the coworking space (e.g., 'A1', 'B2')."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of desk (e.g., 'Standard', 'Standing')."
+        }
+      },
+      "required": [
+        "id",
+        "location"
+      ]
+    },
+    "Booking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Booking",
+      "type": "object",
+      "description": "Represents a booking of a desk by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the booking."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who made the booking. (Relationship: User 1:N Booking)"
+        },
+        "deskId": {
+          "type": "string",
+          "description": "Reference to the Desk that was booked. (Relationship: Desk 1:N Booking)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the booking.",
+          "format": "date-time"
+        },
+        "timeSlot": {
+          "type": "string",
+          "description": "The time slot for the booking (e.g., 'Morning', 'Afternoon', 'Full Day')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "deskId",
+        "date",
+        "timeSlot"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Uses path-based ownership for private user data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/desks/{deskId}",
+        "definition": {
+          "entityName": "Desk",
+          "schema": {
+            "$ref": "#/backend/entities/Desk"
+          },
+          "description": "Stores desk information. Desks are globally accessible.",
+          "params": [
+            {
+              "name": "deskId",
+              "description": "The unique identifier for the desk."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": {
+            "$ref": "#/backend/entities/Booking"
+          },
+          "description": "Stores bookings made by users. Uses path-based ownership to associate bookings with users.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "bookingId",
+              "description": "The unique identifier for the booking."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the Yakidesk application. User data is stored in a private collection (`/users/{userId}`) using path-based ownership. Desks are stored in a top-level collection (`/desks`) as they are globally accessible and do not belong to a specific user. Bookings are nested under the user that created them (`/users/{userId}/bookings/{bookingId}`), reflecting the 1:N relationship. This structure eliminates the need for `get()` calls in security rules, enabling atomic operations. The structure supports the required QAPs by segregating data based on ownership and access needs, ensuring secure list operations for each collection.  Authorization independence is achieved by relying solely on path-based ownership for user-specific data.  Specifically, the `/users/{userId}/bookings/{bookingId}` path ensures that bookings can only be created and managed by the authenticated user matching the `userId` path segment, which eliminates the need for server-side lookups to validate ownership."
+  }
+}
