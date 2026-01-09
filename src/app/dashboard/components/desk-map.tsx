@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
 import DeskItem from './desk-item';
@@ -8,9 +8,6 @@ import BookedDeskItem from './booked-desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
 import BookingCancellationDialog from './booking-cancellation-dialog';
 import type { User } from 'firebase/auth';
-import { DeskStandardLongIcon } from './desk-standard-long-icon';
-import { DeskStandardShortIcon } from './desk-standard-short-icon';
-import { DeskCornerIcon } from './desk-corner-icon';
 
 interface DeskMapProps {
   desks: Desk[];
@@ -22,13 +19,6 @@ interface DeskMapProps {
   currentUser: User | null;
   timeSlot: TimeSlot;
 }
-
-const deskIcons: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
-  D1: DeskStandardLongIcon,
-  D2: DeskStandardShortIcon,
-  D3: DeskCornerIcon,
-};
-
 
 export default function DeskMap({
   desks,
@@ -45,8 +35,6 @@ export default function DeskMap({
 
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-
-  const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
   const findBookingForDesk = (deskId: string, timeSlot: TimeSlot): Booking | undefined => {
     return bookings.find(
@@ -73,7 +61,6 @@ export default function DeskMap({
 
   const getDeskItem = (desk: Desk) => {
     const booking = findBookingForDesk(desk.id, timeSlot);
-    const DeskIcon = deskIcons[desk.id] || DeskStandardLongIcon; // Fallback icon
 
     if (booking) {
       const user = users.find(u => u.id === booking.userId);
@@ -88,7 +75,7 @@ export default function DeskMap({
         />
       );
     }
-    return <DeskItem key={desk.id} desk={desk} onClick={() => handleDeskClick(desk)} icon={DeskIcon} />;
+    return <DeskItem key={desk.id} desk={desk} onClick={() => handleDeskClick(desk)} />;
   };
 
   const desk1 = desks.find((d) => d.id === 'D1');

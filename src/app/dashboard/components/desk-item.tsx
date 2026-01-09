@@ -1,15 +1,16 @@
+'use client';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { Desk } from '@/lib/types';
-import type { FC, SVGProps } from 'react';
+import { DeskIcon } from './desk-icon';
 
 interface DeskItemProps {
   desk: Desk;
   onClick: () => void;
-  icon: FC<SVGProps<SVGSVGElement>>;
 }
 
-export default function DeskItem({ desk, onClick, icon: Icon }: DeskItemProps) {
+export default function DeskItem({ desk, onClick }: DeskItemProps) {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -29,7 +30,7 @@ export default function DeskItem({ desk, onClick, icon: Icon }: DeskItemProps) {
               }
             }}
           >
-            <Icon
+            <DeskIcon
               className={cn(
                 'h-10 w-10 transition-colors',
                 'text-primary'
