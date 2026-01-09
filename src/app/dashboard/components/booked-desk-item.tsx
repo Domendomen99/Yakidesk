@@ -1,3 +1,4 @@
+'use client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -8,6 +9,7 @@ interface BookedDeskItemProps {
   user?: UserProfile;
   isCurrentUser: boolean;
   onClick: () => void;
+  className?: string;
 }
 
 function getInitials(name: string | undefined | null) {
@@ -19,7 +21,7 @@ function getInitials(name: string | undefined | null) {
   return name.substring(0, 2).toUpperCase();
 }
 
-export default function BookedDeskItem({ desk, user, isCurrentUser, onClick }: BookedDeskItemProps) {
+export default function BookedDeskItem({ desk, user, isCurrentUser, onClick, className }: BookedDeskItemProps) {
   const tooltipContent = isCurrentUser
     ? 'Booked by you. Click to cancel.'
     : `Booked by ${user?.name ?? 'someone'}`;
@@ -31,10 +33,12 @@ export default function BookedDeskItem({ desk, user, isCurrentUser, onClick }: B
           <div
             onClick={onClick}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform w-24 h-24 justify-center',
+              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform',
               isCurrentUser
                 ? 'border-primary bg-primary/20 hover:scale-105 cursor-pointer'
-                : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground cursor-not-allowed'
+                : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground cursor-not-allowed',
+              'justify-center',
+              className
             )}
             role="button"
             tabIndex={isCurrentUser ? 0 : -1}

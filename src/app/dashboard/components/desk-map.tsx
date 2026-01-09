@@ -58,24 +58,53 @@ export default function DeskMap({
       setIsBookingDialogOpen(true);
     }
   };
+  
+  const deskStyles: { [key: string]: string } = {
+    D1: 'w-48 h-24',
+    D2: 'w-36 h-24',
+    D3: 'w-36 h-36 relative',
+  };
+  
+  const getCornerDeskShape = () => {
+    return (
+        <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-0 left-0 w-1/2 h-full bg-inherit border-r-0 rounded-l-lg" style={{borderRightWidth: '0px'}}></div>
+            <div className="absolute top-0 left-0 w-full h-1/2 bg-inherit border-b-0 rounded-t-lg" style={{borderBottomWidth: '0px'}}></div>
+        </div>
+    );
+  }
+
 
   const getDeskItem = (desk: Desk) => {
     const booking = findBookingForDesk(desk.id, timeSlot);
-
+    const deskClassName = deskStyles[desk.id] || 'w-24 h-24';
+    
     if (booking) {
       const user = users.find(u => u.id === booking.userId);
       const isCurrentUser = isDeskBookedByCurrentUser(booking);
       return (
-        <BookedDeskItem
-          key={desk.id}
-          desk={desk}
-          user={user}
-          isCurrentUser={isCurrentUser}
-          onClick={() => handleDeskClick(desk)}
-        />
+        <div className="relative">
+          <BookedDeskItem
+            key={desk.id}
+            desk={desk}
+            user={user}
+            isCurrentUser={isCurrentUser}
+            onClick={() => handleDeskClick(desk)}
+            className={deskClassName}
+          />
+           {desk.id === 'D3' && <div className="absolute top-0 left-0 w-1/2 h-full rounded-l-lg pointer-events-none" style={{borderColor: 'inherit', borderRight: 'none'}}></div>}
+           {desk.id === 'D3' && <div className="absolute top-0 left-0 w-full h-1/2 rounded-t-lg pointer-events-none" style={{borderColor: 'inherit', borderBottom: 'none'}}></div>}
+        </div>
       );
     }
-    return <DeskItem key={desk.id} desk={desk} onClick={() => handleDeskClick(desk)} />;
+    
+    return (
+       <div className="relative">
+        <DeskItem key={desk.id} desk={desk} onClick={() => handleDeskClick(desk)} className={deskClassName} />
+         {desk.id === 'D3' && <div className="absolute top-0 left-0 w-1/2 h-full rounded-l-lg pointer-events-none" style={{borderColor: 'inherit', borderRight: 'none'}}></div>}
+         {desk.id === 'D3' && <div className="absolute top-0 left-0 w-full h-1/2 rounded-t-lg pointer-events-none" style={{borderColor: 'inherit', borderBottom: 'none'}}></div>}
+      </div>
+    )
   };
 
   const desk1 = desks.find((d) => d.id === 'D1');
