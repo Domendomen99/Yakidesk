@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import DeskItem from './desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
 import BookingCancellationDialog from './booking-cancellation-dialog';
+import type { User } from 'firebase/auth';
 
 interface DeskMapProps {
   desks: Desk[];
@@ -14,6 +15,7 @@ interface DeskMapProps {
   selectedTimeSlot: TimeSlot;
   onBookDesk: (desk: Desk, timeSlot: TimeSlot) => void;
   onCancelBooking: (booking: Booking) => void;
+  currentUser: User | null;
 }
 
 export default function DeskMap({
@@ -23,6 +25,7 @@ export default function DeskMap({
   selectedTimeSlot,
   onBookDesk,
   onCancelBooking,
+  currentUser,
 }: DeskMapProps) {
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -40,10 +43,14 @@ export default function DeskMap({
         (booking.timeSlot === timeSlot || booking.timeSlot === 'full-day' || timeSlot === 'full-day')
     );
   };
+  
+  const isDeskBookedByCurrentUser = (booking: Booking | undefined) => {
+    return booking && currentUser && booking.userId === currentUser.uid;
+  }
 
   const handleDeskClick = (desk: Desk) => {
     const existingBooking = findBookingForDesk(desk.id, selectedTimeSlot);
-    if (existingBooking) {
+    if (existingBooking && isDeskBookedByCurrentUser(existingBooking)) {
       setBookingToCancel(existingBooking);
       setIsCancelDialogOpen(true);
     } else {

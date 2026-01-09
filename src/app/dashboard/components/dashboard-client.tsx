@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { DeskMap } from './desk-map';
+import DeskMap from './desk-map';
 import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 
 export default function DashboardClient() {
@@ -71,7 +71,7 @@ export default function DashboardClient() {
   };
 
   const handleCancellation = (booking: Booking) => {
-    if (!user || !firestore) {
+    if (!user || !firestore || !booking.id) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -171,6 +171,7 @@ export default function DashboardClient() {
         selectedTimeSlot={timeSlot}
         onBookDesk={handleBooking}
         onCancelBooking={handleCancellation}
+        currentUser={user}
       />
       
     </div>
