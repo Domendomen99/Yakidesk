@@ -20,6 +20,7 @@ export default function DashboardClient() {
   const firestore = useFirestore();
 
   const [date, setDate] = useState<Date>(new Date());
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
   
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -173,6 +174,13 @@ export default function DashboardClient() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)}>
+          <TabsList>
+            <TabsTrigger value="morning">Morning</TabsTrigger>
+            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
+            <TabsTrigger value="full-day">Full Day</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <DeskMap
@@ -183,6 +191,7 @@ export default function DashboardClient() {
         onBookDesk={handleBooking}
         onCancelBooking={handleCancellation}
         currentUser={user}
+        timeSlot={timeSlot}
       />
       
     </div>

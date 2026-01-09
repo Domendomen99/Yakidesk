@@ -18,6 +18,7 @@ interface DeskMapProps {
   onBookDesk: (desk: Desk, timeSlot: TimeSlot) => void;
   onCancelBooking: (booking: Booking) => void;
   currentUser: User | null;
+  timeSlot: TimeSlot;
 }
 
 export default function DeskMap({
@@ -28,13 +29,13 @@ export default function DeskMap({
   onBookDesk,
   onCancelBooking,
   currentUser,
+  timeSlot,
 }: DeskMapProps) {
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
 
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
 
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
@@ -85,14 +86,6 @@ export default function DeskMap({
 
   return (
     <>
-       <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)} className="mb-8">
-          <TabsList className="grid w-full grid-cols-3 md:w-auto mx-auto">
-            <TabsTrigger value="morning">Morning</TabsTrigger>
-            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
-            <TabsTrigger value="full-day">Full Day</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
       <div className="p-4 border border-border rounded-lg bg-background/30 w-full">
         <div className="grid grid-cols-2 grid-rows-2 gap-4 h-96">
           {desk1 && <div className="justify-self-start self-start">{getDeskItem(desk1)}</div>}
