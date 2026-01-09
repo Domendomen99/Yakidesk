@@ -174,11 +174,11 @@ export default function DashboardClient() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)}>
-          <TabsList>
-            <TabsTrigger value="morning">Morning</TabsTrigger>
-            <TabsTrigger value="afternoon">Afternoon</TabsTrigger>
-            <TabsTrigger value="full-day">Full Day</TabsTrigger>
+        <Tabs value={timeSlot} onValueChange={(value) => setTimeSlot(value as TimeSlot)} className="w-full md:w-auto">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="morning" className="w-full">Morning</TabsTrigger>
+            <TabsTrigger value="afternoon" className="w-full">Afternoon</TabsTrigger>
+            <TabsTrigger value="full-day" className="w-full">Full Day</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
