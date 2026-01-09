@@ -45,11 +45,19 @@ export default function DeskMap({ desks, bookings, selectedDate, selectedTimeSlo
     );
   }
 
+  const desk1 = desks.find(d => d.id === 'D1');
+  const desk2 = desks.find(d => d.id === 'D2');
+  const desk3 = desks.find(d => d.id === 'D3');
+
   return (
     <>
       <div className="p-4 border border-border rounded-lg bg-background/30 w-full">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 justify-items-center">
-            {desks.map(getDeskItem)}
+        <div className="grid grid-cols-2 grid-rows-2 gap-4 justify-items-center items-center w-max mx-auto">
+            {desk1 && <div className="justify-self-start">{getDeskItem(desk1)}</div>}
+            {desk2 && <div className="justify-self-end">{getDeskItem(desk2)}</div>}
+            {desk3 && <div className="justify-self-start row-start-2">{getDeskItem(desk3)}</div>}
+            {/* Empty cell for bottom right */}
+            <div></div> 
         </div>
       </div>
       {selectedDesk && (
