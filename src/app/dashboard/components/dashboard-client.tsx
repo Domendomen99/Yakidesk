@@ -213,6 +213,16 @@ export default function DashboardClient() {
           isRootMode={isRootMode}
         />
         
+        <div className="flex justify-end mt-4">
+          <Button 
+            variant="outline"
+            className="border-destructive text-destructive-foreground hover:bg-destructive/10"
+            onClick={() => setIsRootModeDialogOpen(true)}
+          >
+            <KeyRound className="mr-2 h-4 w-4" />
+            Root Mode
+          </Button>
+        </div>
       </div>
       <MyBookingsDialog
         isOpen={isMyBookingsOpen}
@@ -221,13 +231,6 @@ export default function DashboardClient() {
         desks={currentDesks}
         onCancelBooking={handleCancellation}
       />
-      <Button 
-        className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg" 
-        onClick={() => setIsRootModeDialogOpen(true)}
-      >
-        <KeyRound className="h-6 w-6" />
-        <span className="sr-only">Root Mode</span>
-      </Button>
       <RootModeDialog 
         isOpen={isRootModeDialogOpen}
         onOpenChange={setIsRootModeDialogOpen}
