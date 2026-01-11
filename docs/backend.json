@@ -8,9 +8,19 @@
         "id": { "type": "string", "description": "The user's unique ID (matches auth.uid)." },
         "name": { "type": "string", "description": "The user's display name." },
         "email": { "type": "string", "description": "The user's email address.", "format": "email" },
-        "avatarUrl": { "type": "string", "description": "URL of the user's avatar image.", "format": "uri" }
+        "avatarUrl": { "type": "string", "description": "URL of the user's avatar image.", "format": "uri" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "The approval status of the user account."
+        },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "A list of roles assigned to the user (e.g., 'root')."
+        }
       },
-      "required": ["id", "name", "email"]
+      "required": ["id", "name", "email", "status"]
     },
     "Desk": {
       "title": "Desk",

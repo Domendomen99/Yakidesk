@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useAuth, useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useAuth, useUser, useFirestore } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,37 +24,44 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
+      // User is logged in, but we need to check their profile status
+      // This check is now handled in the DashboardLayout, so we just redirect.
       router.push('/dashboard');
     }
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
+    if (!auth || !firestore) return;
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
 
-      // After sign-in, check if the user document exists and create it if it doesn't.
       const userDocRef = doc(firestore, 'users', signedInUser.uid);
       const userDoc = await getDoc(userDocRef);
       
       if (!userDoc.exists()) {
+        // This is a new user, create their profile with 'pending' status
         const newUserProfile = {
           id: signedInUser.uid,
           name: signedInUser.displayName,
           email: signedInUser.email,
           avatarUrl: signedInUser.photoURL,
+          status: 'pending',
+          roles: [],
         };
-        // Use non-blocking write. The security rule will protect this operation.
-        addDocumentNonBlocking(userDocRef, newUserProfile);
+        // We use a blocking write here because the subsequent navigation depends on it.
+        await setDoc(userDocRef, newUserProfile);
       }
-
-      // The useEffect hook will handle the redirection.
+      
+      // After sign-in, the useEffect will trigger the redirection to the dashboard,
+      // where the layout will handle the status check.
     } catch (error) {
       console.error('Error during Google sign-in:', error);
     }
   };
   
+  // Show a loading indicator while checking auth state or if the user is already logged in
   if (isUserLoading || (!isUserLoading && user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
