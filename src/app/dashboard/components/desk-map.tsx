@@ -7,6 +7,7 @@ import BookedDeskItem from './booked-desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
 import BookingCancellationDialog from './booking-cancellation-dialog';
 import type { User } from 'firebase/auth';
+import UserDetailsDialog from './user-details-dialog';
 
 interface DeskMapProps {
   desks: Desk[];
@@ -33,8 +34,10 @@ export default function DeskMap({
 }: DeskMapProps) {
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [userToShow, setUserToShow] = useState<UserProfile | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
 
   const findBookingForDesk = (deskId: string, timeSlot: TimeSlot): Booking | undefined => {
     return bookings.find(
@@ -57,8 +60,14 @@ export default function DeskMap({
         // In root mode, or if it's the current user's booking, open cancellation dialog.
         setBookingToCancel(existingBooking);
         setIsCancelDialogOpen(true);
+      } else {
+        // If it's booked by someone else (and not in root mode), show their details.
+        const bookingUser = users.find(u => u.id === existingBooking.userId);
+        if (bookingUser) {
+          setUserToShow(bookingUser);
+          setIsUserDetailsOpen(true);
+        }
       }
-      // If it's booked by someone else and not in root mode, do nothing.
     } else {
       // If the desk is free, open the booking dialog.
       setSelectedDesk(desk);
@@ -129,6 +138,13 @@ export default function DeskMap({
           onOpenChange={setIsCancelDialogOpen}
           onConfirm={onCancelBooking}
           isRootMode={isRootMode && !isDeskBookedByCurrentUser(bookingToCancel)}
+        />
+      )}
+      {userToShow && (
+        <UserDetailsDialog
+          user={userToShow}
+          isOpen={isUserDetailsOpen}
+          onOpenChange={setIsUserDetailsOpen}
         />
       )}
     </>

@@ -24,48 +24,41 @@ function getInitials(name: string | undefined | null) {
 
 function getFormattedName(name: string | undefined | null) {
   if (!name) return 'N/A';
-  const names = name.split(' ');
-  if (names.length > 1) {
-    return `${names[0]} ${names[names.length - 1][0]}.`;
-  }
   return name;
 }
 
 export default function BookedDeskItem({ desk, user, isCurrentUser, onClick, className, isRootMode }: BookedDeskItemProps) {
   const tooltipContent = isRootMode
-    ? `Booked by ${user?.name ?? 'someone'}. Click to override.`
+    ? `Booked by ${getFormattedName(user?.name)}. Click to override.`
     : isCurrentUser
     ? 'Booked by you. Click to cancel.'
-    : `Booked by ${user?.name ?? 'someone'}`;
-
-  const canClick = isCurrentUser || isRootMode;
+    : `Booked by ${getFormattedName(user?.name)}. Click for details.`;
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            onClick={canClick ? onClick : undefined}
+            onClick={onClick}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform',
+              'flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all duration-300 transform cursor-pointer',
               isCurrentUser && !isRootMode
-                ? 'border-primary bg-primary/20 hover:scale-105 cursor-pointer'
-                : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground',
-              isRootMode ? 'border-destructive bg-destructive/20 hover:scale-105 cursor-pointer' : '',
-              !canClick && 'cursor-not-allowed',
+                ? 'border-primary bg-primary/20 hover:scale-105'
+                : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground hover:border-foreground/50',
+              isRootMode ? 'border-destructive bg-destructive/20 hover:scale-105' : '',
               'justify-center',
               className
             )}
             role="button"
-            tabIndex={canClick ? 0 : -1}
+            tabIndex={0}
             onKeyDown={(e) => {
-              if (canClick && (e.key === 'Enter' || e.key === ' ')) {
+              if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onClick();
               }
             }}
           >
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-12 w-12">
               {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
               <AvatarFallback
                 className={cn(
@@ -76,16 +69,6 @@ export default function BookedDeskItem({ desk, user, isCurrentUser, onClick, cla
                 {getInitials(user?.name)}
               </AvatarFallback>
             </Avatar>
-            <span
-              className={cn(
-                'font-medium font-body text-sm text-center truncate w-full',
-                isCurrentUser && !isRootMode ? 'text-primary' : 'text-muted-foreground',
-                isRootMode ? 'text-destructive-foreground' : ''
-              )}
-               title={getFormattedName(user?.name) ?? ''}
-            >
-              {getFormattedName(user?.name)}
-            </span>
           </div>
         </TooltipTrigger>
         <TooltipContent>
