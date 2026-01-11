@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
-import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, doc, query, where, writeBatch, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -80,7 +80,7 @@ export default function DashboardClient() {
     }, { merge: true });
   };
 
-  const handleBooking = async (desk: Desk, selectedTimeSlot: TimeSlot, force: boolean = false) => {
+  const handleBooking = async (desk: Desk, selectedTimeSlot: TimeSlot) => {
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
@@ -92,53 +92,20 @@ export default function DashboardClient() {
     
     await handleUserCreation();
 
-    if (force && isRootMode) {
-      const batch = writeBatch(firestore);
-      const bookingsCollectionRef = collection(firestore, 'bookings');
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      
-      const q = query(bookingsCollectionRef, where('deskId', '==', desk.id), where('date', '==', formattedDate));
-      const conflictingBookingsSnapshot = await getDocs(q);
+    const bookingsCollectionRef = collection(firestore, 'bookings');
+    const newBooking = {
+      deskId: desk.id,
+      userId: user.uid,
+      date: format(date, 'yyyy-MM-dd'),
+      timeSlot: selectedTimeSlot,
+    };
+    
+    addDocumentNonBlocking(bookingsCollectionRef, newBooking);
 
-      conflictingBookingsSnapshot.forEach(bookingDoc => {
-        const bookingData = bookingDoc.data() as Booking;
-        const conflicts = (bookingData.timeSlot === selectedTimeSlot) || bookingData.timeSlot === 'full-day' || selectedTimeSlot === 'full-day';
-        if (conflicts) {
-          batch.delete(bookingDoc.ref);
-        }
-      });
-      
-      const newBookingRef = doc(bookingsCollectionRef);
-      batch.set(newBookingRef, {
-        deskId: desk.id,
-        userId: user.uid,
-        date: formattedDate,
-        timeSlot: selectedTimeSlot,
-      });
-
-      await batch.commit();
-       toast({
-        title: 'Booking Forced!',
-        description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
-        className: 'bg-destructive text-destructive-foreground'
-      });
-
-    } else {
-       const bookingsCollectionRef = collection(firestore, 'bookings');
-       const newBooking = {
-         deskId: desk.id,
-         userId: user.uid,
-         date: format(date, 'yyyy-MM-dd'),
-         timeSlot: selectedTimeSlot,
-       };
-       
-       addDocumentNonBlocking(bookingsCollectionRef, newBooking);
-
-       toast({
-         title: 'Booking Confirmed!',
-         description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
-       });
-    }
+    toast({
+      title: 'Booking Confirmed!',
+      description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
+    });
   };
 
 

@@ -33,7 +33,6 @@ export default function DeskMap({
 }: DeskMapProps) {
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
-
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
@@ -52,19 +51,16 @@ export default function DeskMap({
   const handleDeskClick = (desk: Desk) => {
     const existingBooking = findBookingForDesk(desk.id, timeSlot);
 
-    if (isRootMode) {
-      setSelectedDesk(desk);
-      if(existingBooking) {
+    if (existingBooking) {
+      const isCurrentUserBooking = isDeskBookedByCurrentUser(existingBooking);
+      if (isRootMode || isCurrentUserBooking) {
+        // In root mode, or if it's the current user's booking, open cancellation dialog.
         setBookingToCancel(existingBooking);
+        setIsCancelDialogOpen(true);
       }
-      setIsBookingDialogOpen(true); // Open booking dialog for root to override
-      return;
-    }
-
-    if (existingBooking && isDeskBookedByCurrentUser(existingBooking)) {
-      setBookingToCancel(existingBooking);
-      setIsCancelDialogOpen(true);
-    } else if (!existingBooking) {
+      // If it's booked by someone else and not in root mode, do nothing.
+    } else {
+      // If the desk is free, open the booking dialog.
       setSelectedDesk(desk);
       setIsBookingDialogOpen(true);
     }
@@ -120,28 +116,19 @@ export default function DeskMap({
           bookings={bookings}
           isOpen={isBookingDialogOpen}
           onOpenChange={setIsBookingDialogOpen}
-          onConfirm={(desk, slot) => {
-            if (isRootMode) {
-              onBookDesk(desk, slot, true); // Force booking
-              if (bookingToCancel) {
-                onCancelBooking(bookingToCancel);
-                setBookingToCancel(null);
-              }
-            } else {
-              onBookDesk(desk, slot, false);
-            }
-          }}
+          onConfirm={onBookDesk}
           isRootMode={isRootMode}
-          conflictingBooking={bookingToCancel ?? undefined}
         />
       )}
-      {bookingToCancel && !isRootMode && (
+      {bookingToCancel && (
         <BookingCancellationDialog
           booking={bookingToCancel}
           desk={desks.find((d) => d.id === bookingToCancel.deskId)}
+          user={users.find(u => u.id === bookingToCancel.userId)}
           isOpen={isCancelDialogOpen}
           onOpenChange={setIsCancelDialogOpen}
           onConfirm={onCancelBooking}
+          isRootMode={isRootMode && !isDeskBookedByCurrentUser(bookingToCancel)}
         />
       )}
     </>
