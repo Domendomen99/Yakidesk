@@ -54,9 +54,9 @@ export default function RootModeDialog({ isOpen, onOpenChange, onSuccess }: Root
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Enter Root Mode</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Enable Root Privileges</DialogTitle>
           <DialogDescription>
-            Please enter the administrator password to enable root privileges.
+            Enter the administrator password to permanently grant root privileges to your account. This action is irreversible.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-2">
@@ -81,7 +81,7 @@ export default function RootModeDialog({ isOpen, onOpenChange, onSuccess }: Root
             Cancel
           </Button>
           <Button onClick={handleConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Activate
+            Grant Privileges
           </Button>
         </DialogFooter>
       </DialogContent>

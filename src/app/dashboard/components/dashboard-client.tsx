@@ -56,6 +56,14 @@ export default function DashboardClient() {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+  
+  // Set root mode based on user profile
+  useEffect(() => {
+    if (userProfile?.roles?.includes('root')) {
+      setIsRootMode(true);
+    }
+  }, [userProfile]);
+
 
   useEffect(() => {
     const requestNotificationPermission = async () => {
@@ -192,10 +200,11 @@ export default function DashboardClient() {
   
   const handleRootModeToggle = () => {
     if (isRootMode) {
-      setIsRootMode(false);
+      // Logic for exiting root mode might be needed here in the future.
+      // For now, we just open the dialog to enter it.
       toast({
-        title: 'Root Mode Deactivated',
-        description: 'You have returned to normal user privileges.',
+        title: 'Root Mode Active',
+        description: 'Your account has permanent root privileges.',
       });
     } else {
       setIsRootModeDialogOpen(true);
@@ -221,6 +230,30 @@ export default function DashboardClient() {
     }
   };
   
+  const handleSetRootRole = async () => {
+    if (!user || !firestore) return;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+      await updateDoc(userDocRef, {
+        roles: arrayUnion('root'),
+      });
+      setIsRootMode(true); // Visually enter root mode immediately
+      setIsRootModeDialogOpen(false); // Close the dialog
+      toast({
+        title: 'Root Privileges Granted!',
+        description: 'Your account now has permanent root privileges.',
+        className: 'bg-destructive text-destructive-foreground',
+      });
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: `Could not set root role. See console for details.`,
+      });
+      console.error('Error setting root role:', error);
+    }
+  };
+
   const currentDesks = desks || [];
   const currentBookings = bookings || [];
   const userProfiles = users || [];
@@ -323,9 +356,10 @@ export default function DashboardClient() {
               !isRootMode && 'border-destructive text-destructive hover:bg-destructive/10'
             )}
             onClick={handleRootModeToggle}
+            disabled={isRootMode}
           >
             <KeyRound className="mr-2 h-4 w-4" />
-            {isRootMode ? 'Exit Root Mode' : 'Root Mode'}
+            {isRootMode ? 'Root Enabled' : 'Enable Root'}
           </Button>
         </div>
       </div>
@@ -339,15 +373,7 @@ export default function DashboardClient() {
       <RootModeDialog 
         isOpen={isRootModeDialogOpen}
         onOpenChange={setIsRootModeDialogOpen}
-        onSuccess={() => {
-          setIsRootMode(true);
-          setIsRootModeDialogOpen(false);
-          toast({
-            title: 'Root Mode Activated',
-            description: 'You now have administrative privileges.',
-            className: 'bg-destructive text-destructive-foreground'
-          });
-        }}
+        onSuccess={handleSetRootRole}
       />
       <UserManagementDialog
         isOpen={isUserManagementOpen}
