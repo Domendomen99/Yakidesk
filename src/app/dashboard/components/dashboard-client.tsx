@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
+import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
 import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import MyBookingsDialog from './my-bookings-dialog';
+import RootModeDialog from './root-mode-dialog';
 import { Header } from '@/components/header';
 
 export default function DashboardClient() {
@@ -24,6 +25,16 @@ export default function DashboardClient() {
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
+  const [isRootMode, setIsRootMode] = useState(false);
+  const [isRootModeDialogOpen, setIsRootModeDialogOpen] = useState(false);
+  
+  useEffect(() => {
+    if (isRootMode) {
+      document.body.classList.add('root-mode');
+    } else {
+      document.body.classList.remove('root-mode');
+    }
+  }, [isRootMode]);
   
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -69,7 +80,7 @@ export default function DashboardClient() {
     }, { merge: true });
   };
 
-  const handleBooking = (desk: Desk, selectedTimeSlot: TimeSlot) => {
+  const handleBooking = async (desk: Desk, selectedTimeSlot: TimeSlot, force: boolean = false) => {
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
@@ -79,23 +90,57 @@ export default function DashboardClient() {
       return;
     }
     
-    handleUserCreation();
+    await handleUserCreation();
 
-    const bookingsCollectionRef = collection(firestore, 'bookings');
-    const newBooking = {
-      deskId: desk.id,
-      userId: user.uid,
-      date: format(date, 'yyyy-MM-dd'),
-      timeSlot: selectedTimeSlot,
-    };
-    
-    addDocumentNonBlocking(bookingsCollectionRef, newBooking);
+    if (force && isRootMode) {
+      const batch = writeBatch(firestore);
+      const bookingsCollectionRef = collection(firestore, 'bookings');
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      
+      const q = query(bookingsCollectionRef, where('deskId', '==', desk.id), where('date', '==', formattedDate));
+      const conflictingBookingsSnapshot = await getDocs(q);
 
-    toast({
-      title: 'Booking Confirmed!',
-      description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
-    });
+      conflictingBookingsSnapshot.forEach(bookingDoc => {
+        const bookingData = bookingDoc.data() as Booking;
+        const conflicts = (bookingData.timeSlot === selectedTimeSlot) || bookingData.timeSlot === 'full-day' || selectedTimeSlot === 'full-day';
+        if (conflicts) {
+          batch.delete(bookingDoc.ref);
+        }
+      });
+      
+      const newBookingRef = doc(bookingsCollectionRef);
+      batch.set(newBookingRef, {
+        deskId: desk.id,
+        userId: user.uid,
+        date: formattedDate,
+        timeSlot: selectedTimeSlot,
+      });
+
+      await batch.commit();
+       toast({
+        title: 'Booking Forced!',
+        description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
+        className: 'bg-destructive text-destructive-foreground'
+      });
+
+    } else {
+       const bookingsCollectionRef = collection(firestore, 'bookings');
+       const newBooking = {
+         deskId: desk.id,
+         userId: user.uid,
+         date: format(date, 'yyyy-MM-dd'),
+         timeSlot: selectedTimeSlot,
+       };
+       
+       addDocumentNonBlocking(bookingsCollectionRef, newBooking);
+
+       toast({
+         title: 'Booking Confirmed!',
+         description: `Desk ${desk.label} booked for ${format(date, 'PPP')} (${selectedTimeSlot}).`,
+       });
+    }
   };
+
 
   const handleCancellation = (booking: Booking) => {
     if (!user || !firestore || !booking.id) {
@@ -198,6 +243,7 @@ export default function DashboardClient() {
           onCancelBooking={handleCancellation}
           currentUser={user}
           timeSlot={timeSlot}
+          isRootMode={isRootMode}
         />
         
       </div>
@@ -207,6 +253,26 @@ export default function DashboardClient() {
         bookings={allUserBookings}
         desks={currentDesks}
         onCancelBooking={handleCancellation}
+      />
+      <Button 
+        className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg" 
+        onClick={() => setIsRootModeDialogOpen(true)}
+      >
+        <KeyRound className="h-6 w-6" />
+        <span className="sr-only">Root Mode</span>
+      </Button>
+      <RootModeDialog 
+        isOpen={isRootModeDialogOpen}
+        onOpenChange={setIsRootModeDialogOpen}
+        onSuccess={() => {
+          setIsRootMode(true);
+          setIsRootModeDialogOpen(false);
+          toast({
+            title: 'Root Mode Activated',
+            description: 'You now have administrative privileges.',
+            className: 'bg-destructive text-destructive-foreground'
+          });
+        }}
       />
     </>
   );

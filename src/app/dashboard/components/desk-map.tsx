@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
-import { format } from 'date-fns';
 import DeskItem from './desk-item';
 import BookedDeskItem from './booked-desk-item';
 import BookingConfirmationDialog from './booking-confirmation-dialog';
@@ -14,10 +13,11 @@ interface DeskMapProps {
   bookings: Booking[];
   users: UserProfile[];
   selectedDate: Date;
-  onBookDesk: (desk: Desk, timeSlot: TimeSlot) => void;
+  onBookDesk: (desk: Desk, timeSlot: TimeSlot, force?: boolean) => void;
   onCancelBooking: (booking: Booking) => void;
   currentUser: User | null;
   timeSlot: TimeSlot;
+  isRootMode: boolean;
 }
 
 export default function DeskMap({
@@ -29,6 +29,7 @@ export default function DeskMap({
   onCancelBooking,
   currentUser,
   timeSlot,
+  isRootMode,
 }: DeskMapProps) {
   const [selectedDesk, setSelectedDesk] = useState<Desk | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -50,6 +51,16 @@ export default function DeskMap({
 
   const handleDeskClick = (desk: Desk) => {
     const existingBooking = findBookingForDesk(desk.id, timeSlot);
+
+    if (isRootMode) {
+      setSelectedDesk(desk);
+      if(existingBooking) {
+        setBookingToCancel(existingBooking);
+      }
+      setIsBookingDialogOpen(true); // Open booking dialog for root to override
+      return;
+    }
+
     if (existingBooking && isDeskBookedByCurrentUser(existingBooking)) {
       setBookingToCancel(existingBooking);
       setIsCancelDialogOpen(true);
@@ -75,6 +86,7 @@ export default function DeskMap({
             isCurrentUser={isCurrentUser}
             onClick={() => handleDeskClick(desk)}
             className={deskClassName}
+            isRootMode={isRootMode}
           />
         </div>
       );
@@ -108,10 +120,22 @@ export default function DeskMap({
           bookings={bookings}
           isOpen={isBookingDialogOpen}
           onOpenChange={setIsBookingDialogOpen}
-          onConfirm={onBookDesk}
+          onConfirm={(desk, slot) => {
+            if (isRootMode) {
+              onBookDesk(desk, slot, true); // Force booking
+              if (bookingToCancel) {
+                onCancelBooking(bookingToCancel);
+                setBookingToCancel(null);
+              }
+            } else {
+              onBookDesk(desk, slot, false);
+            }
+          }}
+          isRootMode={isRootMode}
+          conflictingBooking={bookingToCancel ?? undefined}
         />
       )}
-      {bookingToCancel && (
+      {bookingToCancel && !isRootMode && (
         <BookingCancellationDialog
           booking={bookingToCancel}
           desk={desks.find((d) => d.id === bookingToCancel.deskId)}

@@ -72,6 +72,28 @@
     --sidebar-border: 140 80% 30%;
     --sidebar-ring: 330 80% 60%;
   }
+
+  .root-mode {
+    --background: 0 50% 8%;
+    --foreground: 0 80% 70%;
+    --card: 0 50% 8%;
+    --card-foreground: 0 80% 70%;
+    --popover: 0 50% 8%;
+    --popover-foreground: 0 80% 70%;
+    --primary: 0 80% 60%;
+    --primary-foreground: 0 80% 10%;
+    --secondary: 0 80% 20%;
+    --secondary-foreground: 0 80% 90%;
+    --muted: 0 80% 15%;
+    --muted-foreground: 0 80% 45%;
+    --accent: 0 100% 40%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 80% 30%;
+    --input: 0 80% 25%;
+    --ring: 0 80% 60%;
+  }
 }
 
 @layer base {
