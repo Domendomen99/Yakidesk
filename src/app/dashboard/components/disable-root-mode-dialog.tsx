@@ -33,9 +33,7 @@ export default function DisableRootModeDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="font-headline text-2xl">Disable Root Privileges?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to permanently remove your root privileges? You will lose access to
-            all administrator functions. This action can only be reversed by another administrator
-            or by re-entering the root password.
+            Are you sure you want to permanently remove your root privileges? You will lose access to all administrator functions. To regain root access, you will need to enter the password again.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
