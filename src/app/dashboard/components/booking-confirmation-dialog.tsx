@@ -16,6 +16,7 @@ import type { Booking, Desk, TimeSlot } from '@/lib/types';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BookingConfirmationDialogProps {
   desk: Desk;
