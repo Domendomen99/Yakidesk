@@ -74,7 +74,7 @@ export default function DashboardClient() {
         if (permission === 'granted') {
           console.log('Notification permission granted.');
           // Get the token
-          const fcmToken = await getToken(messaging, { vapidKey: 'BBRtV_h132pTj_I_E525rPz-mEnP3aW-tY3y3E82hW1s8fV2l3d4p5H7I8J9k0L1m2N3o4p5q6r7s8' });
+          const fcmToken = await getToken(messaging, { vapidKey: "BBRtV_h132pTj_I_E525rPz-mEnP3aW-tY3y3E82hW1s8fV2l3d4p5H7I8J9k0L1m2N3o4p5q6r7s8" });
           if (fcmToken) {
             console.log('FCM Token:', fcmToken);
             // Save the token to the user's profile
@@ -356,7 +356,7 @@ export default function DashboardClient() {
               !isRootMode && 'border-destructive text-destructive hover:bg-destructive/10'
             )}
             onClick={handleRootModeToggle}
-            disabled={isRootMode}
+            disabled={userProfile?.roles?.includes('root')}
           >
             <KeyRound className="mr-2 h-4 w-4" />
             {isRootMode ? 'Root Enabled' : 'Enable Root'}
