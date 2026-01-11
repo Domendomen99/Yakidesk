@@ -18,25 +18,6 @@ import RootModeDialog from './root-mode-dialog';
 import { Header } from '@/components/header';
 import UserManagementDialog from './user-management-dialog';
 
-// Temporary mock data for testing pending users
-const mockPendingUsers: UserProfile[] = [
-  {
-    id: 'mock-user-1',
-    name: 'Alice Smith (Pending)',
-    email: 'alice.smith@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=alice',
-    status: 'pending',
-  },
-  {
-    id: 'mock-user-2',
-    name: 'Bob Johnson (Pending)',
-    email: 'bob.johnson@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=bob',
-    status: 'pending',
-  },
-];
-
-
 export default function DashboardClient() {
   const { toast } = useToast();
   const { user } = useUser();
@@ -169,16 +150,6 @@ export default function DashboardClient() {
   };
 
   const handleUserStatusUpdate = async (userId: string, status: 'approved' | 'rejected') => {
-    // For mock users, we can just show a toast as we can't update Firestore for them.
-    if (userId.startsWith('mock-user-')) {
-      toast({
-        title: 'Mock User Updated',
-        description: `Mock user has been "${status}". This is a simulation.`,
-      });
-       // Here you might want to filter them out from the mockPendingUsers array in a real test scenario
-      return;
-    }
-
     if (!firestore) return;
     const userDocRef = doc(firestore, 'users', userId);
     try {
@@ -204,14 +175,6 @@ export default function DashboardClient() {
   const userProfiles = users || [];
   const allUserBookings = userBookings || [];
   const isLoading = isLoadingDesks || isLoadingBookings || isLoadingUsers || isLoadingUserBookings;
-
-  // Combine real users with mock pending users for testing
-  const allUsersForManagement = useMemo(() => {
-    const existingIds = new Set(userProfiles.map(u => u.id));
-    const uniqueMockUsers = mockPendingUsers.filter(mu => !existingIds.has(mu.id));
-    return [...userProfiles, ...uniqueMockUsers];
-  }, [userProfiles]);
-
 
   if (isLoading && desks === null) {
     return (
@@ -338,7 +301,7 @@ export default function DashboardClient() {
       <UserManagementDialog
         isOpen={isUserManagementOpen}
         onOpenChange={setIsUserManagementOpen}
-        users={allUsersForManagement}
+        users={userProfiles}
         onUserUpdate={handleUserStatusUpdate}
       />
     </>
