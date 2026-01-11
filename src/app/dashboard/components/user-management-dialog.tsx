@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -38,9 +38,20 @@ export default function UserManagementDialog({
   onOpenChange,
   onUserUpdate,
 }: UserManagementDialogProps) {
+  // We manage an internal state to hide users after they are actioned upon, for mock users.
+  const [processedMockUsers, setProcessedMockUsers] = useState<Set<string>>(new Set());
+
   const pendingUsers = useMemo(() => {
-    return users.filter((user) => user.status === 'pending');
-  }, [users]);
+    return users.filter((user) => user.status === 'pending' && !processedMockUsers.has(user.id));
+  }, [users, processedMockUsers]);
+
+  const handleUpdate = (userId: string, status: 'approved' | 'rejected') => {
+    if (userId.startsWith('mock-user-')) {
+      setProcessedMockUsers(prev => new Set(prev).add(userId));
+    }
+    onUserUpdate(userId, status);
+  };
+
 
   const UserItem = ({ user }: { user: UserProfile }) => (
     <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
@@ -59,7 +70,7 @@ export default function UserManagementDialog({
           variant="outline"
           size="icon"
           className="text-green-500 border-green-500 hover:bg-green-500 hover:text-white"
-          onClick={() => onUserUpdate(user.id, 'approved')}
+          onClick={() => handleUpdate(user.id, 'approved')}
           aria-label="Approve user"
         >
           <Check className="h-4 w-4" />
@@ -67,7 +78,7 @@ export default function UserManagementDialog({
         <Button
           variant="destructive"
           size="icon"
-          onClick={() => onUserUpdate(user.id, 'rejected')}
+          onClick={() => handleUpdate(user.id, 'rejected')}
           aria-label="Reject user"
         >
           <X className="h-4 w-4" />
