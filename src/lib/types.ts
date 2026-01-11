@@ -22,4 +22,5 @@ export interface UserProfile {
   avatarUrl?: string;
   status: 'pending' | 'approved' | 'rejected';
   roles?: ('root')[];
+  fcmTokens?: string[];
 }

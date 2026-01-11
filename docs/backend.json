@@ -18,6 +18,13 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "A list of roles assigned to the user (e.g., 'root')."
+        },
+        "fcmTokens": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "An array of Firebase Cloud Messaging tokens for sending push notifications."
         }
       },
       "required": ["id", "name", "email", "status"]
