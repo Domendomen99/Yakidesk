@@ -37,6 +37,16 @@ export default function DashboardClient() {
       document.body.classList.remove('root-mode');
     }
   }, [isRootMode]);
+
+  useEffect(() => {
+    // Set initial time slot based on current time
+    const currentHour = new Date().getHours();
+    if (currentHour >= 13) {
+      setTimeSlot('afternoon');
+    } else {
+      setTimeSlot('morning');
+    }
+  }, []);
   
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
