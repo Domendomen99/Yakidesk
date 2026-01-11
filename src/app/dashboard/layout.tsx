@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
-import { Header } from '@/components/header';
 
 export default function DashboardLayout({
   children,
@@ -32,7 +31,6 @@ export default function DashboardLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header />
       <main className="flex-1">{children}</main>
     </div>
   );
