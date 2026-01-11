@@ -256,7 +256,7 @@ export default function DashboardClient() {
         />
         
         <div className="flex justify-end mt-4 gap-2">
-           {isRootUser && (
+           {isRootMode && (
             <Button
               variant="outline"
               onClick={() => setIsUserManagementOpen(true)}
