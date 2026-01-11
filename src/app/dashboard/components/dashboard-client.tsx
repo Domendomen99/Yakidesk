@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
-import { collection, doc, query, where, writeBatch, getDocs } from 'firebase/firestore';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound, Users } from 'lucide-react';
+import { collection, doc, query, where, writeBatch, getDocs, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,10 +12,11 @@ import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
-import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useDoc } from '@/firebase';
 import MyBookingsDialog from './my-bookings-dialog';
 import RootModeDialog from './root-mode-dialog';
 import { Header } from '@/components/header';
+import UserManagementDialog from './user-management-dialog';
 
 export default function DashboardClient() {
   const { toast } = useToast();
@@ -27,7 +28,8 @@ export default function DashboardClient() {
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
   const [isRootMode, setIsRootMode] = useState(false);
   const [isRootModeDialogOpen, setIsRootModeDialogOpen] = useState(false);
-  
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
+
   useEffect(() => {
     if (isRootMode) {
       document.body.classList.add('root-mode');
@@ -36,6 +38,13 @@ export default function DashboardClient() {
     }
   }, [isRootMode]);
   
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'desks');
@@ -140,6 +149,27 @@ export default function DashboardClient() {
     }
   };
 
+  const handleUserStatusUpdate = async (userId: string, status: 'approved' | 'rejected') => {
+    if (!firestore) return;
+    const userDocRef = doc(firestore, 'users', userId);
+    try {
+      await updateDoc(userDocRef, { status });
+      toast({
+        title: 'User Updated',
+        description: `User has been ${status}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: `Could not update user status.`,
+      });
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const isRootUser = useMemo(() => userProfile?.roles?.includes('root') ?? false, [userProfile]);
+  
   const currentDesks = desks || [];
   const currentBookings = bookings || [];
   const userProfiles = users || [];
@@ -225,7 +255,16 @@ export default function DashboardClient() {
           isRootMode={isRootMode}
         />
         
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end mt-4 gap-2">
+           {isRootUser && (
+            <Button
+              variant="outline"
+              onClick={() => setIsUserManagementOpen(true)}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Manage Users
+            </Button>
+          )}
            <Button
             variant={isRootMode ? 'destructive' : 'outline'}
             className={cn(
@@ -257,6 +296,12 @@ export default function DashboardClient() {
             className: 'bg-destructive text-destructive-foreground'
           });
         }}
+      />
+      <UserManagementDialog
+        isOpen={isUserManagementOpen}
+        onOpenChange={setIsUserManagementOpen}
+        users={userProfiles}
+        onUserUpdate={handleUserStatusUpdate}
       />
     </>
   );

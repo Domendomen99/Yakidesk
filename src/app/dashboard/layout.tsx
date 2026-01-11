@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -42,7 +42,7 @@ export default function DashboardLayout({
       } else {
         router.push('/pending'); // Redirect pending/rejected users
       }
-    } else if (user && !isProfileLoading) {
+    } else if (user && !isProfileLoading && firestore) {
       // 4. Handle existing users without a status field (backward compatibility)
       // This case handles users created before the 'status' field was introduced.
       const legacyUserProfileRef = doc(firestore, 'users', user.uid);
