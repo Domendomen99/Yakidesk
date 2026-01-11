@@ -56,11 +56,10 @@ export default function DashboardClient() {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-  const isRootUser = useMemo(() => userProfile?.roles?.includes('root') ?? false, [userProfile]);
 
   useEffect(() => {
     const requestNotificationPermission = async () => {
-      if (!messaging || !user || !isRootUser || !firestore) return;
+      if (!isRootMode || !messaging || !user || !firestore) return;
       
       try {
         const permission = await Notification.requestPermission();
@@ -75,6 +74,10 @@ export default function DashboardClient() {
             await updateDoc(userDocRef, {
               fcmTokens: arrayUnion(fcmToken)
             });
+            toast({
+              title: 'Notifications Enabled',
+              description: 'You will now receive notifications for new bookings.',
+            });
           } else {
             console.log('No registration token available. Request permission to generate one.');
           }
@@ -83,12 +86,17 @@ export default function DashboardClient() {
         }
       } catch (error) {
         console.error('An error occurred while requesting notification permission. ', error);
+        toast({
+            variant: 'destructive',
+            title: 'Notification Error',
+            description: 'Could not enable notifications. See console for details.',
+        });
       }
     };
   
     requestNotificationPermission();
   
-  }, [messaging, user, isRootUser, firestore]);
+  }, [isRootMode, messaging, user, firestore, toast]);
 
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -350,3 +358,5 @@ export default function DashboardClient() {
     </>
   );
 }
+
+    
