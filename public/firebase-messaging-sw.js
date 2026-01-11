@@ -1,12 +1,12 @@
-// This file must be in the public directory.
+// DO NOT USE 'use client' OR 'use server'
+// This file is a service worker and has its own separate context.
 
-// Import the Firebase app and messaging libraries.
-// See: https://firebase.google.com/docs/web/setup#access-firebase
-import { initializeApp } from 'firebase/app';
-import { getMessaging } from 'firebase/messaging/sw';
+// Import and configure Firebase
+// See: https://firebase.google.com/docs/cloud-messaging/js/receive#handle-messages-when-your-app-is-in-the-background
+importScripts('https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.3/firebase-messaging-compat.js');
 
-// The Firebase config object is taken from the client-side configuration.
-// It's safe to expose this data. Security is handled by Firestore rules.
+// This config is intentionally public.
 const firebaseConfig = {
   "projectId": "studio-6708594834-5c158",
   "appId": "1:366990089732:web:d748f6ca354fa093e1df51",
@@ -16,16 +16,20 @@ const firebaseConfig = {
   "messagingSenderId": "366990089732"
 };
 
+firebase.initializeApp(firebaseConfig);
 
-// Initialize the Firebase app in the service worker.
-const app = initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
 
-// Get the Firebase Messaging instance.
-// This is required to handle background notifications.
-const messaging = getMessaging(app);
+// Optional: Set a background message handler.
+// This will be triggered when a message is received while the app is in the background.
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/firebase-logo.png' // Optional: you can add an icon
+  };
 
-// Note: Background message handling would be added here if needed,
-// but for simple notifications, this setup is sufficient.
-// self.addEventListener('push', (event) => { ... });
-
-console.log('Firebase Messaging Service Worker initialized.');
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
