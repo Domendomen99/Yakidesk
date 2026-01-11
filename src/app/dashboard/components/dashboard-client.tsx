@@ -128,6 +128,18 @@ export default function DashboardClient() {
     });
   };
   
+  const handleRootModeToggle = () => {
+    if (isRootMode) {
+      setIsRootMode(false);
+      toast({
+        title: 'Root Mode Deactivated',
+        description: 'You have returned to normal user privileges.',
+      });
+    } else {
+      setIsRootModeDialogOpen(true);
+    }
+  };
+
   const currentDesks = desks || [];
   const currentBookings = bookings || [];
   const userProfiles = users || [];
@@ -214,13 +226,15 @@ export default function DashboardClient() {
         />
         
         <div className="flex justify-end mt-4">
-          <Button 
-            variant="outline"
-            className="border-destructive text-destructive-foreground hover:bg-destructive/10"
-            onClick={() => setIsRootModeDialogOpen(true)}
+           <Button
+            variant={isRootMode ? 'destructive' : 'outline'}
+            className={cn(
+              !isRootMode && 'border-destructive text-destructive-foreground hover:bg-destructive/10'
+            )}
+            onClick={handleRootModeToggle}
           >
             <KeyRound className="mr-2 h-4 w-4" />
-            Root Mode
+            {isRootMode ? 'Exit Root Mode' : 'Root Mode'}
           </Button>
         </div>
       </div>
