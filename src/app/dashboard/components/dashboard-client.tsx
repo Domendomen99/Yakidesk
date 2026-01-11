@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound, Users } from 'lucide-react';
-import { collection, doc, query, where, writeBatch, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, doc, query, where, writeBatch, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,6 +18,7 @@ import MyBookingsDialog from './my-bookings-dialog';
 import RootModeDialog from './root-mode-dialog';
 import { Header } from '@/components/header';
 import UserManagementDialog from './user-management-dialog';
+import DisableRootModeDialog from './disable-root-mode-dialog';
 
 export default function DashboardClient() {
   const { toast } = useToast();
@@ -30,6 +31,7 @@ export default function DashboardClient() {
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
   const [isRootMode, setIsRootMode] = useState(false);
   const [isRootModeDialogOpen, setIsRootModeDialogOpen] = useState(false);
+  const [isDisableRootModeDialogOpen, setIsDisableRootModeDialogOpen] = useState(false);
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
 
   useEffect(() => {
@@ -61,6 +63,8 @@ export default function DashboardClient() {
   useEffect(() => {
     if (userProfile?.roles?.includes('root')) {
       setIsRootMode(true);
+    } else {
+      setIsRootMode(false);
     }
   }, [userProfile]);
 
@@ -74,7 +78,7 @@ export default function DashboardClient() {
         if (permission === 'granted') {
           console.log('Notification permission granted.');
           // Get the token
-          const fcmToken = await getToken(messaging, { vapidKey: "BBRtV_h132pTj_I_E525rPz-mEnP3aW-tY3y3E82hW1s8fV2l3d4p5H7I8J9k0L1m2N3o4p5q6r7s8" });
+          const fcmToken = await getToken(messaging);
           if (fcmToken) {
             console.log('FCM Token:', fcmToken);
             // Save the token to the user's profile
@@ -199,13 +203,8 @@ export default function DashboardClient() {
   };
   
   const handleRootModeToggle = () => {
-    if (isRootMode) {
-      // Logic for exiting root mode might be needed here in the future.
-      // For now, we just open the dialog to enter it.
-      toast({
-        title: 'Root Mode Active',
-        description: 'Your account has permanent root privileges.',
-      });
+    if (userProfile?.roles?.includes('root')) {
+      setIsDisableRootModeDialogOpen(true);
     } else {
       setIsRootModeDialogOpen(true);
     }
@@ -253,6 +252,30 @@ export default function DashboardClient() {
       console.error('Error setting root role:', error);
     }
   };
+
+  const handleRemoveRootRole = async () => {
+    if (!user || !firestore) return;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+      await updateDoc(userDocRef, {
+        roles: arrayRemove('root'),
+      });
+      setIsRootMode(false); // Visually exit root mode immediately
+      setIsDisableRootModeDialogOpen(false); // Close the dialog
+      toast({
+        title: 'Root Privileges Revoked',
+        description: 'Your account no longer has root privileges.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: `Could not remove root role. See console for details.`,
+      });
+      console.error('Error removing root role:', error);
+    }
+  };
+
 
   const currentDesks = desks || [];
   const currentBookings = bookings || [];
@@ -356,10 +379,9 @@ export default function DashboardClient() {
               !isRootMode && 'border-destructive text-destructive hover:bg-destructive/10'
             )}
             onClick={handleRootModeToggle}
-            disabled={userProfile?.roles?.includes('root')}
           >
             <KeyRound className="mr-2 h-4 w-4" />
-            {isRootMode ? 'Root Enabled' : 'Enable Root'}
+            {isRootMode ? 'Disable Root' : 'Enable Root'}
           </Button>
         </div>
       </div>
@@ -374,6 +396,11 @@ export default function DashboardClient() {
         isOpen={isRootModeDialogOpen}
         onOpenChange={setIsRootModeDialogOpen}
         onSuccess={handleSetRootRole}
+      />
+       <DisableRootModeDialog
+        isOpen={isDisableRootModeDialogOpen}
+        onOpenChange={setIsDisableRootModeDialogOpen}
+        onConfirm={handleRemoveRootRole}
       />
       <UserManagementDialog
         isOpen={isUserManagementOpen}
