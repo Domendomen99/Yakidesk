@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, addDays, subDays, isBefore, startOfToday } from 'date-fns';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, KeyRound, Users } from 'lucide-react';
 import { collection, doc, query, where, writeBatch, getDocs, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { getToken } from 'firebase/messaging';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,7 +12,7 @@ import { cn } from '@/lib/utils';
 import type { Booking, Desk, TimeSlot, UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import DeskMap from './desk-map';
-import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useDoc, useMessaging } from '@/firebase';
+import { useCollection, useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, useDoc } from '@/firebase';
 import MyBookingsDialog from './my-bookings-dialog';
 import RootModeDialog from './root-mode-dialog';
 import { Header } from '@/components/header';
@@ -24,7 +23,6 @@ export default function DashboardClient() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
-  const messaging = useMessaging();
 
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('morning');
@@ -68,47 +66,6 @@ export default function DashboardClient() {
     }
   }, [userProfile]);
 
-
-  useEffect(() => {
-    const requestNotificationPermission = async () => {
-      if (!isRootMode || !messaging || !user || !firestore) return;
-      
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          // Get the token
-          const fcmToken = await getToken(messaging);
-          if (fcmToken) {
-            console.log('FCM Token:', fcmToken);
-            // Save the token to the user's profile
-            const userDocRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userDocRef, {
-              fcmTokens: arrayUnion(fcmToken)
-            });
-            toast({
-              title: 'Notifications Enabled',
-              description: 'You will now receive notifications for new bookings.',
-            });
-          } else {
-            console.log('No registration token available. Request permission to generate one.');
-          }
-        } else {
-          console.log('Unable to get permission to notify.');
-        }
-      } catch (error) {
-        console.error('An error occurred while requesting notification permission. ', error);
-        toast({
-            variant: 'destructive',
-            title: 'Notification Error',
-            description: 'Could not enable notifications. See console for details.',
-        });
-      }
-    };
-  
-    requestNotificationPermission();
-  
-  }, [isRootMode, messaging, user, firestore, toast]);
 
   const desksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
